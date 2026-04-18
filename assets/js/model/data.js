@@ -16,14 +16,10 @@ const AppData = {
     heading: ['Get Hyped.', 'Get Noticed.', 'Get Results.'],
     subtext: 'Klaar met gokken op content\ndie niets oplevert?',
     stats: [
-      { type: 'stat',  value: '10M+',  color: '#4ab3f4' },
-      { type: 'photo', src: 'assets/images/hero1.jpg', alt: 'influencer' },
-      { type: 'stat',  value: '30+',   color: '#3ecfaf' },
-      { type: 'photo', src: 'assets/images/hero2.jpg', alt: 'car interior' },
-      { type: 'stat',  value: '10M+',  color: '#4ab3f4' },
-      { type: 'photo', src: 'assets/images/hero3.jpg', alt: 'champagne' },
-      { type: 'stat',  value: '30+',   color: '#3ecfaf' },
-      { type: 'photo', src: 'assets/images/hero4.jpg', alt: 'building' },
+      { type: 'stat',  value: '10M+',  color: '#4ab3f4', label: 'Organische views' },
+      { type: 'photo', src: 'assets/images/hero1.jpg', alt: 'Influencer' },
+      { type: 'stat',  value: '30+',   color: '#3ecfaf', label: 'Merken geholpen' },
+      { type: 'photo', src: 'assets/images/hero2.jpg', alt: 'Car interior' },
     ],
   },
 

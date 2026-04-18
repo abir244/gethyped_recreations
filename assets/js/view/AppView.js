@@ -106,23 +106,51 @@ class AppView {
 
     // Duplicate items for infinite loop
     const buildItem = (item, i) => {
-      const card = this._el('div', { class: 'carousel-card', 'data-type': item.type });
+      const card = this._el('div', { class: `carousel-card ${item.type}-card`, 'data-type': item.type });
+      card.dataset.index = i;
       if (item.type === 'stat') {
         card.style.background = item.color;
         const val = this._el('span', { class: 'stat-value' });
         val.textContent = item.value;
-        card.appendChild(val);
-      } else {
-        card.style.background = '#ccc';
-        const img = this._el('img', { class: 'card-photo', src: item.src, alt: item.alt });
-        img.onerror = () => { card.style.background = this._photoFallback(i); };
-        card.appendChild(img);
-      }
-      return card;
-    };
 
-    // Build twice for infinite scroll
-    [...d.stats, ...d.stats].forEach((item, i) => {
+        const footer = this._el('div', { class: 'stat-footer' });
+        const label = this._el('span', { class: 'stat-label' });
+        label.textContent = item.label || '';
+        const divider = this._el('span', { class: 'stat-line' });
+
+        footer.appendChild(label);
+        footer.appendChild(divider);
+
+        card.appendChild(val);
+        card.appendChild(footer);
+      } else {
+        card.style.background = '#111';
+        const img = this._el('img', { class: 'card-photo', src: item.src, alt: item.alt });
+        img.onerror = () => {
+          img.style.display = 'none';
+          card.style.background = this._photoFallback(i);
+        };
+        const overlay = this._el('div', { class: 'photo-overlay' });
+        overlay.textContent = item.alt || '';
+        card.appendChild(img);
+        card.appendChild(overlay);
+      }
+
+      // Touch / pointer interaction shake effect
+      card.addEventListener('pointerdown', () => {
+        card.classList.add('shake');
+      });
+      card.addEventListener('animationend', event => {
+        if (event.animationName === 'card-shake') {
+          card.classList.remove('shake');
+        }
+      });
+
+      return card;
+    };  
+
+    // Build a fixed set of responsive cards
+    d.stats.forEach((item, i) => {
       track.appendChild(buildItem(item, i));
     });
 
@@ -153,6 +181,10 @@ class AppView {
     const photo  = this._el('div', { class: 'about-photo' });
     const img    = this._el('img', { src: d.photo, alt: 'team member', class: 'about-img' });
     img.onerror  = () => { photo.style.background = '#c8b0a0'; };
+    img.onerror  = () => { 
+      img.style.display = 'none';
+      photo.style.background = '#c8b0a0'; 
+    };
     photo.appendChild(img);
 
     const text   = this._el('div', { class: 'about-text' });
@@ -202,7 +234,10 @@ class AppView {
       c.style.setProperty('--border-color', card.border);
       c.style.setProperty('--offset', `${i * 40}px`);
       const img = this._el('img', { src: card.src, alt: card.alt });
-      img.onerror = () => { c.style.background = this._photoFallback(i); };
+      img.onerror = () => { 
+        img.style.display = 'none';
+        c.style.background = this._photoFallback(i); 
+      };
       const arrowBtn = this._el('a', { class: 'card-arrow', href: '#work' });
       arrowBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>`;
       c.appendChild(img);
@@ -210,8 +245,10 @@ class AppView {
       cards.appendChild(c);
     });
 
-    sec.appendChild(left);
-    sec.appendChild(cards);
+    const container = this._el('div', { class: 'work-container' });
+    container.appendChild(left);
+    container.appendChild(cards);
+    sec.appendChild(container);
     return sec;
   }
 
@@ -219,6 +256,7 @@ class AppView {
   _buildExpertises() {
     const expertises = this.vm.getExpertisesData();
     const sec        = this._el('section', { class: 'section-expertises', id: 'expertises' });
+    const container  = this._el('div', { class: 'expertises-container' });
 
     expertises.forEach((exp, i) => {
       const card = this._el('div', { class: 'expertise-card reveal', 'data-expertise-index': i });
@@ -238,6 +276,7 @@ class AppView {
       imgWrap.style.setProperty('--border-color', exp.imageBorder);
       const img = this._el('img', { src: exp.image, alt: exp.title, class: 'expertise-img' });
       img.onerror = () => {
+        img.style.display = 'none';
         imgWrap.style.background = exp.imageBorder;
         imgWrap.style.opacity = '0.3';
       };
@@ -261,9 +300,10 @@ class AppView {
       card.appendChild(title);
       card.appendChild(imgWrap);
       card.appendChild(lower);
-      sec.appendChild(card);
+      container.appendChild(card);
     });
 
+    sec.appendChild(container);
     return sec;
   }
 
@@ -417,13 +457,8 @@ class AppView {
 
   // ── Carousel init ─────────────────────────────────────────────────────────
   _initCarousel() {
-    const track = document.getElementById('carousel-track');
-    if (!track) return;
-    // Wait for layout
-    requestAnimationFrame(() => {
-      const half = track.scrollWidth / 2;
-      this.vm.startCarousel(track, track.scrollWidth);
-    });
+    // No automatic infinite carousel animation for responsive hero cards.
+    // The layout is now a responsive horizontal card row.
   }
 
   // ── Scroll reveal animations ──────────────────────────────────────────────
