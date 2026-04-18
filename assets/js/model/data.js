@@ -119,4 +119,17 @@ const AppData = {
     design: '© Design by Dylan',
     privacy: 'Privacyvoorwaarden',
   },
+
+  cookies: {
+    title: 'Cookie Preferences',
+    message: 'We use cookies to enhance your experience and gather analytics. You can choose which types to accept.',
+    options: [
+      { id: 'essential', label: 'Essential Cookies', description: 'Required for basic site functionality', enabled: true, disabled: true },
+      { id: 'analytics', label: 'Analytics', description: 'Helps us understand how you use our site', enabled: false, disabled: false },
+      { id: 'marketing', label: 'Marketing', description: 'Used to show you relevant content', enabled: false, disabled: false },
+    ],
+    acceptAll: 'Accept All',
+    rejectAll: 'Reject All',
+    save: 'Save Preferences',
+  },
 };

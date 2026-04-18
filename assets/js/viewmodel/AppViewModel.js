@@ -14,6 +14,8 @@ class AppViewModel {
       navbarVisible:  true,
       carouselOffset: 0,
       carouselPaused: false,
+      cookieBannerOpen: !this._hasCookieConsent(),
+      cookiePreferences: this._loadCookiePreferences(),
     };
 
     // Subscribers map: stateKey → [callbacks]
@@ -37,11 +39,13 @@ class AppViewModel {
   }
 
   // ── State getters/setters ──────────────────────────────────────────────────
-  get menuOpen()       { return this._state.menuOpen;       }
-  get scrollY()        { return this._state.scrollY;        }
-  get navbarSticky()   { return this._state.navbarSticky;   }
-  get navbarVisible()  { return this._state.navbarVisible;  }
-  get carouselOffset() { return this._state.carouselOffset; }
+  get menuOpen()           { return this._state.menuOpen;           }
+  get scrollY()            { return this._state.scrollY;            }
+  get navbarSticky()       { return this._state.navbarSticky;       }
+  get navbarVisible()      { return this._state.navbarVisible;      }
+  get carouselOffset()     { return this._state.carouselOffset;     }
+  get cookieBannerOpen()   { return this._state.cookieBannerOpen;   }
+  get cookiePreferences()  { return this._state.cookiePreferences;  }
 
   toggleMenu() {
     this._state.menuOpen = !this._state.menuOpen;
@@ -110,6 +114,65 @@ class AppViewModel {
   pauseCarousel()  { this._state.carouselPaused = true;  }
   resumeCarousel() { this._state.carouselPaused = false; }
 
+  // ── Cookie Management ──────────────────────────────────────────────────────
+  _hasCookieConsent() {
+    return localStorage.getItem('gethyped_cookie_consent') !== null;
+  }
+
+  _loadCookiePreferences() {
+    const saved = localStorage.getItem('gethyped_cookie_consent');
+    if (saved) {
+      return JSON.parse(saved);
+    }
+    // Return default preferences
+    return {
+      essential: true,
+      analytics: false,
+      marketing: false,
+    };
+  }
+
+  toggleCookieOption(optionId) {
+    if (optionId === 'essential') return; // Essential cannot be toggled
+    this._state.cookiePreferences[optionId] = !this._state.cookiePreferences[optionId];
+    this._notify('cookiePreferences');
+  }
+
+  acceptAllCookies() {
+    this._state.cookiePreferences = {
+      essential: true,
+      analytics: true,
+      marketing: true,
+    };
+    this._saveCookieConsent();
+    this._closeCookieBanner();
+  }
+
+  rejectAllCookies() {
+    this._state.cookiePreferences = {
+      essential: true,
+      analytics: false,
+      marketing: false,
+    };
+    this._saveCookieConsent();
+    this._closeCookieBanner();
+  }
+
+  saveCookiePreferences() {
+    this._saveCookieConsent();
+    this._closeCookieBanner();
+  }
+
+  _saveCookieConsent() {
+    localStorage.setItem('gethyped_cookie_consent', JSON.stringify(this._state.cookiePreferences));
+    this._notify('cookiePreferences');
+  }
+
+  _closeCookieBanner() {
+    this._state.cookieBannerOpen = false;
+    this._notify('cookieBannerOpen');
+  }
+
   // ── Brand logo carousel (CSS-driven) ─────────────────────────────────────
   // Nothing needed here – pure CSS animation
 
@@ -122,4 +185,5 @@ class AppViewModel {
   getBrandsData()     { return this.data.brands;     }
   getContactData()    { return this.data.contact;    }
   getFooterData()     { return this.data.footer;     }
+  getCookieData()     { return this.data.cookies;    }
 }

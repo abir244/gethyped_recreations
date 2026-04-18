@@ -18,6 +18,7 @@ class AppView {
     this._root.appendChild(this._buildBrands());
     this._root.appendChild(this._buildContact());
     this._root.appendChild(this._buildFooter());
+    this._root.appendChild(this._buildCookieBanner());
     this._bindGlobal();
     this._initCarousel();
     this._initScrollAnimations();
@@ -220,7 +221,7 @@ class AppView {
     const sec        = this._el('section', { class: 'section-expertises', id: 'expertises' });
 
     expertises.forEach((exp, i) => {
-      const card = this._el('div', { class: 'expertise-card reveal' });
+      const card = this._el('div', { class: 'expertise-card reveal', 'data-expertise-index': i });
       card.style.background = exp.bg;
       if (exp.bg === '#ffffff') card.classList.add('white-card');
 
@@ -436,7 +437,31 @@ class AppView {
       });
     }, { threshold: 0.12 });
 
-    document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+    // Standard reveal animation for non-expertise elements
+    document.querySelectorAll('.reveal:not([data-expertise-index])').forEach(el => io.observe(el));
+
+    // Sequential reveal for expertise cards on scroll
+    const expertiseCards = document.querySelectorAll('[data-expertise-index]');
+    if (expertiseCards.length > 0) {
+      let previousRevealed = 0;
+      const handleExpertiseScroll = () => {
+        const expertiseSection = document.getElementById('expertises');
+        const sectionTop = expertiseSection.getBoundingClientRect().top;
+        const cardHeight = expertiseCards[0]?.offsetHeight || 300;
+        const cardsToShow = Math.max(1, Math.ceil(((window.innerHeight - sectionTop) / cardHeight)));
+        const visibleCards = Math.min(cardsToShow, expertiseCards.length);
+        
+        if (visibleCards > previousRevealed) {
+          for (let i = previousRevealed; i < visibleCards; i++) {
+            expertiseCards[i].classList.add('revealed');
+          }
+          previousRevealed = visibleCards;
+        }
+      };
+      
+      window.addEventListener('scroll', handleExpertiseScroll, { passive: true });
+      handleExpertiseScroll(); // Initial call
+    }
   }
 
   // ── Helpers ───────────────────────────────────────────────────────────────
@@ -454,5 +479,80 @@ class AppView {
       youtube:   `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.95-1.96C18.88 4 12 4 12 4s-6.88 0-8.59.46a2.78 2.78 0 0 0-1.95 1.96A29 29 0 0 0 1 12a29 29 0 0 0 .46 5.58 2.78 2.78 0 0 0 1.95 1.95C5.12 20 12 20 12 20s6.88 0 8.59-.47a2.78 2.78 0 0 0 1.95-1.95A29 29 0 0 0 23 12a29 29 0 0 0-.46-5.58z"/><polygon points="9.75 15.02 15.5 12 9.75 8.98 9.75 15.02" fill="white"/></svg>`,
     };
     return icons[platform] || '';
+  }
+
+  // ── Cookie Banner ─────────────────────────────────────────────────────────
+  _buildCookieBanner() {
+    const cookies = this.vm.getCookieData();
+    const prefs = this.vm.cookiePreferences;
+    const banner = this._el('div', { class: 'cookie-banner', id: 'cookie-banner' });
+
+    const inner = this._el('div', { class: 'cookie-inner' });
+
+    // Header
+    const header = this._el('div', { class: 'cookie-header' });
+    const title = this._el('h3', { class: 'cookie-title' });
+    title.textContent = cookies.title;
+    header.appendChild(title);
+
+    // Message
+    const message = this._el('p', { class: 'cookie-message' });
+    message.textContent = cookies.message;
+
+    // Options container
+    const optionsContainer = this._el('div', { class: 'cookie-options' });
+    cookies.options.forEach(opt => {
+      const optionWrap = this._el('div', { class: 'cookie-option' });
+      
+      const checkbox = this._el('input', { type: 'checkbox', class: 'cookie-checkbox', id: `cookie-${opt.id}` });
+      checkbox.checked = prefs[opt.id];
+      if (opt.disabled) checkbox.disabled = true;
+      checkbox.addEventListener('change', () => this.vm.toggleCookieOption(opt.id));
+
+      const labelWrap = this._el('label', { class: 'cookie-option-label', 'for': `cookie-${opt.id}` });
+      const labelText = this._el('strong', {});
+      labelText.textContent = opt.label;
+      const desc = this._el('span', { class: 'cookie-option-desc' });
+      desc.textContent = opt.description;
+
+      labelWrap.appendChild(labelText);
+      labelWrap.appendChild(desc);
+
+      optionWrap.appendChild(checkbox);
+      optionWrap.appendChild(labelWrap);
+      optionsContainer.appendChild(optionWrap);
+    });
+
+    // Buttons
+    const buttonGroup = this._el('div', { class: 'cookie-buttons' });
+
+    const acceptAll = this._el('button', { class: 'cookie-btn cookie-btn-primary' });
+    acceptAll.textContent = cookies.acceptAll;
+    acceptAll.addEventListener('click', () => this.vm.acceptAllCookies());
+
+    const rejectAll = this._el('button', { class: 'cookie-btn cookie-btn-secondary' });
+    rejectAll.textContent = cookies.rejectAll;
+    rejectAll.addEventListener('click', () => this.vm.rejectAllCookies());
+
+    const save = this._el('button', { class: 'cookie-btn cookie-btn-primary' });
+    save.textContent = cookies.save;
+    save.addEventListener('click', () => this.vm.saveCookiePreferences());
+
+    buttonGroup.appendChild(rejectAll);
+    buttonGroup.appendChild(acceptAll);
+    buttonGroup.appendChild(save);
+
+    inner.appendChild(header);
+    inner.appendChild(message);
+    inner.appendChild(optionsContainer);
+    inner.appendChild(buttonGroup);
+    banner.appendChild(inner);
+
+    // Subscribe to banner visibility
+    this.vm.subscribe('cookieBannerOpen', open => {
+      banner.classList.toggle('visible', open);
+    });
+
+    return banner;
   }
 }
